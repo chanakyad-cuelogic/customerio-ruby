@@ -106,7 +106,16 @@ module Customerio
     end
 
     def options
-      { :basic_auth => @auth }
+      
+      #overriden for Http proxy for Market place AMI
+
+      if ENV['SAAS_ENV'].eql?('false') && ENV["http_proxy"].present? && ENV["http_proxy"].match(/@/).present?
+        username, password = ENV["http_proxy"].split('@').first.split("//").last.split(":")
+        ip, port = ENV["http_proxy"].split('@').last.split(":")
+        { :basic_auth => @auth, :http_proxyaddr => ip, :http_proxyport => port.to_i, :http_proxyuser => username, :http_proxypass=> password}
+      else
+        { :basic_auth => @auth }
+      end
     end
   end
 end
