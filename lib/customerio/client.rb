@@ -1,3 +1,5 @@
+#line 23, 64 82-94 , overriddedn since customer io has bug while sending email
+
 require 'httparty'
 require 'multi_json'
 
@@ -18,7 +20,7 @@ module Customerio
     end
 
     def initialize(site_id, secret_key, options = {})
-      @auth = { :username => site_id, :password => secret_key }
+      @auth = { :username => site_id, :password => secret_key, :json => true}
       if options[:json].nil?
         warn "[DEPRECATION] Customerio::Client: JSON encoding will be the default in the next release. We recommend switching to JSON. To continue to use form-encoding, you must specify `:json => false` in your initializer."
       end
@@ -59,7 +61,7 @@ module Customerio
       url = customer_path(attributes[:id])
 
       if @json
-        verify_response(self.class.put(url, options.merge(:body => MultiJson.dump(attributes), :headers => {'Content-Type' => 'application/json'})))
+        verify_response(self.class.put(url, options.merge(:body => MultiJson.dump(attributes), :headers => {'Content-Type' => 'application/json'}, :query => "query")))
       else
         verify_response(self.class.put(url, options.merge(:body => attributes)))
       end
@@ -77,9 +79,17 @@ module Customerio
       body = { :name => event_name, :data => attributes }
       body[:timestamp] = attributes[:timestamp] if valid_timestamp?(attributes[:timestamp])
       if @json
-        verify_response(self.class.post(url, options.merge(:body => MultiJson.dump(body), :headers => {'Content-Type' => 'application/json'})))
+        if event_name == :signed_up
+          verify_response(self.class.post(url, options.merge(:body => MultiJson.dump(body), :headers => {'Content-Type' => 'application/json'}, :query => {"key" => "value"})))
+        else
+          verify_response(self.class.post(url, options.merge(:body => MultiJson.dump(body), :headers => {'Content-Type' => 'application/json'})))
+        end
       else
-        verify_response(self.class.post(url, options.merge(:body => body)))
+        if event_name == :signed_up
+          verify_response(self.class.post(url, options.merge(:body => body, :query => {"key" => "value"})))
+        else
+          verify_response(self.class.post(url, options.merge(:body => body)))
+        end
       end
     end
 
@@ -90,7 +100,6 @@ module Customerio
     def valid_timestamp?(timestamp)
       timestamp && timestamp.is_a?(Integer) && timestamp > 999999999 && timestamp < 100000000000
     end
-
 
     def verify_response(response)
       if response.code >= 200 && response.code < 300
@@ -106,7 +115,7 @@ module Customerio
     end
 
     def options
-      
+
       #overriden for Http proxy for Market place AMI
 
       if ENV['SAAS_ENV'].eql?('false') && ENV["http_proxy"].present? && ENV["http_proxy"].match(/@/).present?
