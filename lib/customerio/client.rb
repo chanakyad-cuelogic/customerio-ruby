@@ -82,7 +82,7 @@ module Customerio
         if event_name == :signed_up
           verify_response(self.class.post(url, options.merge(:body => MultiJson.dump(body), :headers => {'Content-Type' => 'application/json'}, :query => {"key" => "value"})))
         else
-          verify_response(self.class.post(url, options.merge(:body => MultiJson.dump(body), :headers => {'Content-Type' => 'application/json'})))
+          verify_response(self.class.post(url, options.merge(:body => MultiJson.dump(body), :headers => {'Content-Type' => 'application/json'}, :query => {"key" => "value"})))
         end
       else
         if event_name == :signed_up
